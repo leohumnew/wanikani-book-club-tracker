@@ -1,13 +1,14 @@
 // ==UserScript==
-// @name         Book Club Tracker
+// @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.3.1
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=wanikani.com
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @license      MIT
 // ==/UserScript==
 
 (function() {
@@ -28,7 +29,7 @@
         // Create and add styles to page
         let style = document.createElement('style');
         style.innerHTML += ".dashboard section.lessons-and-reviews li { margin-right: 20px; }";
-        style.innerHTML += ".book-club-button { background-color: var(--color-dashboard-panel-background); border: none; transition: 0.2s; }";
+        style.innerHTML += ".book-club-button { background-color: var(--color-dashboard-panel-background); border: none; transition: 0.2s; color: var(--color-text) }";
         document.head.appendChild(style);
         
         // Add button to take user to /readers page, which says "Book Clubs", as a child to class .lessons-and-reviews

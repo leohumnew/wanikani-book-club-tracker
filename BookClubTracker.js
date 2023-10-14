@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.2
+// @version      0.3.3
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -13,6 +13,14 @@
 
 (function() {
     'use strict';
+    /*  1. Helper functions
+        2. Dashboard
+        3. Readers
+            a. Syling
+            b. Book club panel
+            c. Load / save
+            d. Popup menu
+        4. Main script */
 
     // ------------------ HELPER FUNCTIONS ------------------
     function createButton(text, clickHandler) { // Create a button with the given text and click handler
@@ -22,7 +30,6 @@
         return button;
     }
 
-    // ------------------ MAIN SCRIPT ------------------
     // ------------------ DASHBOARD ------------------
     if (location.pathname == "/dashboard" || location.pathname == "/") {
 
@@ -78,12 +85,12 @@
         style.innerHTML += ".edit-popup__form > button { margin: auto; cursor: pointer; width: 100%; }"; // Popup save button
         document.head.appendChild(style);
 
-        // Get book club helper function
+        // Get a specific book club from the list of book clubs by name
         function getBookClub(title) {
             return bookClubs.find(bookClub => bookClub.title === title);
         }
 
-        // Create a panel header
+        // Create the header for a "panel" (section with title + content)
         function createPanelHeader(text, button) {
             let panelTitle = document.createElement('div');
             panelTitle.className = "page-header";
@@ -91,8 +98,7 @@
             panelTitleText.innerHTML = text;
             panelTitleText.className = "page-header__title";
             panelTitle.appendChild(panelTitleText);
-            // If a button was passed in, add it to the right of the h1 element
-            if (button) {
+            if (button) { // If a button was passed in, add it to the right of the h1 element
                 button.className += " page-header__additional-info";
                 panelTitle.appendChild(button);
             }
@@ -106,9 +112,9 @@
             return panelBody;
         }
 
-        // Create a book club panel
+        // Create the book club panel
         function createBookClubPanel(bookClubInfo) {
-            let bookClubPanel = document.createElement('div'); // Create a div for the book club panel
+            let bookClubPanel = document.createElement('div'); // Create a container div for the book club panel
             bookClubPanel.className = "book-club";
 
             let bookClubHeader = document.createElement('div'); // Create the header with the title and delete button
@@ -136,9 +142,9 @@
             activeButton.style.color += (bookClubInfo.active ? "var(--color-correct-light)" : "var(--color-incorrect-light)");
             bookClubSubTitle.appendChild(activeButton);
 
-            let bookClubWeeks = document.createElement('div'); // Create a div for each week and its info
+            let bookClubWeeks = document.createElement('div'); // Create a container div for the weeks
             bookClubWeeks.className = "book-club-weeks";
-            for (let i = 0; i < bookClubInfo.weeksInfo.length; i++) { // Loop over each week
+            for (let i = 0; i < bookClubInfo.weeksInfo.length; i++) { // Loop over each week and add it to the container
                 bookClubWeeks.appendChild(createWeekInfo(bookClubInfo, i));
             }
 
@@ -146,7 +152,7 @@
             return bookClubPanel;
         }
 
-        function createWeekInfo(bookClubInfo, i) {
+        function createWeekInfo(bookClubInfo, i) { // Create the div for a week in a book club
             let week = document.createElement('div'); // Create a div for the week and add a click handler to toggle the week's complete status
                 week.className = "book-club-week";
                 week.addEventListener("click", function() {
@@ -161,7 +167,7 @@
                 weekInfo.innerHTML = "Pages: " + bookClubInfo.weeksInfo[i].startPage + " - " + (bookClubInfo.weeksInfo[i+1] ? bookClubInfo.weeksInfo[i+1].startPage - 1 : bookClubInfo.totalPages);
                 weekInfo.innerHTML += "<br>Start Date: " + new Date(bookClubInfo.weeksInfo[i].startDate).toLocaleDateString();
 
-                // Set week class depending on date and "complete" field, to either inactive (if start date is in the future, can be set to complete as well), or active (if current date is after startDate and before next week startDate), or missed (if current date is after next week startDate and week is not complete), or completed (if week is complete)
+                // Set week class depending on date and "complete" field
                 let today = new Date();
                 let nextWeekStartDate = i < bookClubInfo.weeksInfo.length - 1 ? new Date(bookClubInfo.weeksInfo[i + 1].startDate) : null;
                 if (bookClubInfo.weeksInfo[i].completed) { // If week is completed, add completed class and add tick symbol to week title
@@ -169,12 +175,12 @@
                     weekTitle.innerHTML += " <span class='wk-icon fa-regular fa-check' style='float: right'></span>";
                 }
 
-                if (today < new Date(bookClubInfo.weeksInfo[i].startDate)) {
+                if (today < new Date(bookClubInfo.weeksInfo[i].startDate)) { // If week is in the future, add inactive class
                     week.className += " book-club-week--inactive";
-                } else if (nextWeekStartDate && today >= nextWeekStartDate && !bookClubInfo.weeksInfo[i].completed) {
+                } else if (nextWeekStartDate && today >= nextWeekStartDate && !bookClubInfo.weeksInfo[i].completed) { // If week is missed, add missed class and add exclamation symbol to week title
                     week.className += " book-club-week--missed";
                     weekTitle.innerHTML += " <span class='wk-icon fa-regular fa-exclamation' style='float: right'></span>";
-                } else if (bookClubInfo.active && today >= new Date(bookClubInfo.weeksInfo[i].startDate) && (!nextWeekStartDate || today < nextWeekStartDate)) {
+                } else if (bookClubInfo.active && today >= new Date(bookClubInfo.weeksInfo[i].startDate) && (!nextWeekStartDate || today < nextWeekStartDate)) { // If week is active, add active class
                     week.className += " book-club-week--active";
                 }
                 
@@ -276,14 +282,23 @@
                 
                 let weeksInfoList = document.querySelector("#weeksInfo ul");
                 let weekElement = document.createElement('li'); // Create new week element, and insert it in weeksInfoList in the correct position
-                weekElement.innerHTML = "Week " + (index + 1) + " - Start Page: " + newWeekInfo.startPage + " - Start Date: " + new Date(newWeekInfo.startDate).toLocaleDateString();
+                weekElement.innerHTML = "Week <span></span> - Start Page: " + newWeekInfo.startPage + " - Start Date: " + new Date(newWeekInfo.startDate).toLocaleDateString();
                 let deleteWeekButton = createButton("", function() { // Create delete button
-                    weeksInfo.splice(index, 1);
+                    weeksInfo.splice(index < 0 ? 0 : index, 1);
                     weeksInfoList.removeChild(weekElement);
+                    for (let i = 0; i < weeksInfoList.childNodes.length; i++) { // Loop through weeksInfoList and update week numbers
+                        weeksInfoList.childNodes[i].querySelector("span").innerHTML = i + 1;
+                    }
                 });
                 deleteWeekButton.className = "delete-week-button wk-icon fa-regular fa-times";
                 weekElement.appendChild(deleteWeekButton);
-                weeksInfoList.insertBefore(weekElement, weeksInfoList.childNodes[index]);
+
+                if(index != -1) weeksInfoList.insertBefore(weekElement, weeksInfoList.childNodes[index]);
+                else weeksInfoList.appendChild(weekElement);
+
+                for (let i = 0; i < weeksInfoList.childNodes.length; i++) { // Loop through weeksInfoList and update week numbers
+                    weeksInfoList.childNodes[i].querySelector("span").innerHTML = i + 1;
+                }
 
                 newWeekForm.reset();
                 document.querySelector("#startPage").focus();
@@ -387,11 +402,15 @@
             let bookClubsList = createPanelBody("book-clubs-list");
             parentElement.insertBefore(bookClubsList, oldHeader);
 
-            // Get the list of book clubs from local storage, then loop over them creating a book club panel for each
-            bookClubs.forEach(bookClub => {
+            bookClubs.forEach(bookClub => { // Loop over each book club and add it to the book clubs list
                 let bookClubPanel = createBookClubPanel(bookClub);
                 bookClubsList.appendChild(bookClubPanel);
             });
+            if(bookClubs.length === 0) { // If there are no book clubs, add a message
+                let noBookClubsMessage = document.createElement('h2');
+                noBookClubsMessage.innerHTML = "No book clubs added yet.";
+                bookClubsList.appendChild(noBookClubsMessage);
+            }
         }
     }
 })();

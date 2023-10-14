@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.4
+// @version      0.3.5
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -36,6 +36,7 @@
         // Create and add styles to page
         let style = document.createElement('style');
         style.innerHTML += ".dashboard section.lessons-and-reviews li { margin-right: 20px; }";
+        style.innerHTML += ".dashboard section.lessons-and-reviews li .wk-icon { position: absolute; top: -8px; right: -8px; border-radius: 50%; background-color: var(--color-text); color: var(--color-dashboard-panel-background); height: 1em; padding: 5px; }";
         style.innerHTML += ".book-club-button { background-color: var(--color-dashboard-panel-background); border: none; transition: 0.2s; color: var(--color-text) }";
         style.innerHTML += ".book-club-button:hover { color: var(--color-text); }";
         document.head.appendChild(style);
@@ -48,6 +49,29 @@
             location.href = "/readers";
         });
         newButton.className = "lessons-and-reviews__button lessons-and-reviews__reviews-button--50 book-club-button";
+
+        // If there are any missed weeks in active book clubs, add a warning symbol badge to the button
+        let activeClubs = GM_getValue("WaniKaniBookClubs", []).filter(bookClub => bookClub.active);
+        let today = new Date();
+        let badgeNumber = 0;
+        activeClubs.forEach(bookClub => {
+            for (let i = 0; i < bookClub.weeksInfo.length; i++) {
+                let nextWeekStartDate = i < bookClub.weeksInfo.length - 1 ? new Date(bookClub.weeksInfo[i + 1].startDate) : null;
+                if (!bookClub.weeksInfo[i].completed && today >= new Date(bookClub.weeksInfo[i].startDate)) {
+                    if(nextWeekStartDate != null && today >= nextWeekStartDate) badgeNumber = -1;
+                    else badgeNumber = 1;
+                    break;
+                }
+            }
+            if(badgeNumber == -1) return;
+        });
+        if (badgeNumber != 0) {
+            let badge = document.createElement('span');
+            if(badgeNumber == -1) badge.className = "wk-icon fa-regular fa-triangle-exclamation";
+            else badge.className = "wk-icon fa-regular fa-hourglass-half";
+            newButton.appendChild(badge);
+        }
+
         newButtonLi.appendChild(newButton);
         parentElement.prepend(newButtonLi);
 

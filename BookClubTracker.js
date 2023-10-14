@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.3
+// @version      0.3.4
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -39,7 +39,7 @@
         style.innerHTML += ".book-club-button { background-color: var(--color-dashboard-panel-background); border: none; transition: 0.2s; color: var(--color-text) }";
         style.innerHTML += ".book-club-button:hover { color: var(--color-text); }";
         document.head.appendChild(style);
-        
+
         // Add button to take user to /readers page, which says "Book Clubs", as a child to class .lessons-and-reviews
         let parentElement = document.querySelector(".lessons-and-reviews ul");
         let newButtonLi = document.createElement('li');
@@ -50,7 +50,7 @@
         newButton.className = "lessons-and-reviews__button lessons-and-reviews__reviews-button--50 book-club-button";
         newButtonLi.appendChild(newButton);
         parentElement.prepend(newButtonLi);
-        
+
     // ------------------ READERS ------------------
     } else if (location.pathname == "/readers") {
 
@@ -104,7 +104,7 @@
             }
             return panelTitle;
         }
-        
+
         // Create a panel body
         function createPanelBody(className) {
             let panelBody = document.createElement('section');
@@ -159,7 +159,7 @@
                     toggleBookClubWeek(bookClubInfo.title, i + 1);
                     week.replaceWith(createWeekInfo(bookClubInfo, i));
                 });
-                
+
                 let weekTitle = document.createElement('h3'); // Create a title and info for the week
                 weekTitle.innerHTML = "Week " + (i + 1);
 
@@ -183,7 +183,7 @@
                 } else if (bookClubInfo.active && today >= new Date(bookClubInfo.weeksInfo[i].startDate) && (!nextWeekStartDate || today < nextWeekStartDate)) { // If week is active, add active class
                     week.className += " book-club-week--active";
                 }
-                
+
                 week.append(weekTitle, weekInfo); // Append the title and info to the week div
                 return week;
             }
@@ -279,7 +279,7 @@
                 } else {
                     weeksInfo.splice(index, 0, newWeekInfo);
                 }
-                
+
                 let weeksInfoList = document.querySelector("#weeksInfo ul");
                 let weekElement = document.createElement('li'); // Create new week element, and insert it in weeksInfoList in the correct position
                 weekElement.innerHTML = "Week <span></span> - Start Page: " + newWeekInfo.startPage + " - Start Date: " + new Date(newWeekInfo.startDate).toLocaleDateString();
@@ -381,10 +381,7 @@
         }
 
         // ------------------ MAIN SCRIPT ------------------
-        // Wait for page and turbo to finish loading, by waiting for the turbo:load event
-        document.addEventListener("turbo:load", function() {
-            runScript();
-        });
+        runScript();
 
         // Run the script
         function runScript() {

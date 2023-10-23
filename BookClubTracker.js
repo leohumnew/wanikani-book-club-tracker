@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.5.0
+// @version      0.5.1
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -32,6 +32,15 @@
         return button;
     }
 
+    function dateFromString(dateString) { // Create a date object from a string in the format "YYYY-MM-DD"
+        let date = new Date();
+        date.setDate(dateString.substring(8, 10));
+        date.setMonth(dateString.substring(5, 7) - 1);
+        date.setFullYear(dateString.substring(0, 4));
+        date.setHours(12, 0, 0, 0);
+        return date;
+    }
+
     // Create a popup menu to manually add or edit a book club
     function manualAddEdit(bookClub, isCreating, canEditTitle = false) {
         // Create a container for all the text inputs, then add them with an html string to the popupForm's innerHTML
@@ -49,6 +58,8 @@
         popupForm.appendChild(weeksInfoContainer);
         let saveButton = createButton("Save", null);
         popupForm.addEventListener("submit", function() {
+            // Check if club with the same name already exists
+            if (isCreating && bookClubs.find(bookClub => bookClub.title === document.querySelector("#title").value)) return alert("A book club with that name already exists.");
             if (isCreating || canEditTitle) {
                 addBookClub(
                     document.querySelector("#title").value,
@@ -87,7 +98,7 @@
                 startPage: parseInt(document.querySelector("#startPage").value),
                 startDate: document.querySelector("#startDate").value
             };
-            let index = weeksInfo.findIndex(week => new Date(week.startDate) > new Date(newWeekInfo.startDate));
+            let index = weeksInfo.findIndex(week => dateFromString(week.startDate) > dateFromString(newWeekInfo.startDate));
             if (index === -1) {
                 weeksInfo.push(newWeekInfo);
             } else {
@@ -96,8 +107,8 @@
 
             let weeksInfoList = document.querySelector("#weeksInfo ul");
             let weekElement = document.createElement('li'); // Create new week element, and insert it in weeksInfoList in the correct position
-            let date = new Date(newWeekInfo.startDate);
-            weekElement.innerHTML = "Week <span></span> - Start Page: " + newWeekInfo.startPage + " - Start Date: " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear();
+            let date = dateFromString(newWeekInfo.startDate);
+            weekElement.innerHTML = "Week <span></span> - Start Page: " + newWeekInfo.startPage + " - Start Date: " + date.toLocaleDateString();
             let deleteWeekButton = createButton("", function() { // Create delete button
                 weeksInfo.splice(index < 0 ? 0 : index, 1);
                 weeksInfoList.removeChild(weekElement);
@@ -123,8 +134,8 @@
         for (let i = 0; i < weeksInfo.length; i++) {
             let week = weeksInfo[i];
             let weekElement = document.createElement('li');
-            let date = new Date(week.startDate);
-            weekElement.innerHTML = "Week <span>" + (i + 1) + "</span> - Start Page: " + week.startPage + " - Start Date: " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear();
+            let date = dateFromString(week.startDate);
+            weekElement.innerHTML = "Week <span>" + (i + 1) + "</span> - Start Page: " + week.startPage + " - Start Date: " + date.toLocaleDateString();
             let deleteWeekButton = createButton("", function() { // Create delete button for each week
                 weeksInfo.splice(i, 1);
                 weeksInfoList.removeChild(weekElement);
@@ -146,7 +157,6 @@
         return GM_getValue("WaniKaniBookClubs", []);
     }
     function saveBookClubs() {
-        console.log("Saving book clubs");
         GM_setValue("WaniKaniBookClubs", bookClubs);
     }
     function addBookClub(title, url, vocabListUrl, totalPages, weeksInfo) {
@@ -253,7 +263,7 @@
                 showBookClubEditPopup(false, bookClubInfo.title);
             });
             editButton.className = "action-button wk-icon fa-regular fa-pen-to-square";
-            editButton.style = "font-size: large;"
+            editButton.style = "font-size: large;";
 
             let deleteButton = createButton("", function() { // Create the delete button
                 if (confirm("Are you sure you want to delete this book club?")) deleteBookClub(bookClubInfo.title);
@@ -303,22 +313,22 @@
 
             let weekInfo = document.createElement('p');
             weekInfo.innerHTML = "Pages: " + bookClubInfo.weeksInfo[i].startPage + " - " + (bookClubInfo.weeksInfo[i+1] ? bookClubInfo.weeksInfo[i+1].startPage - 1 : bookClubInfo.totalPages);
-            weekInfo.innerHTML += "<br>Start Date: " + new Date(bookClubInfo.weeksInfo[i].startDate).toLocaleDateString();
+            weekInfo.innerHTML += "<br>Start Date: " + dateFromString(bookClubInfo.weeksInfo[i].startDate).toLocaleDateString();
 
             // Set week class depending on date and "complete" field
             let today = new Date();
-            let nextWeekStartDate = i < bookClubInfo.weeksInfo.length - 1 ? new Date(bookClubInfo.weeksInfo[i + 1].startDate) : null;
+            let nextWeekStartDate = i < bookClubInfo.weeksInfo.length - 1 ? dateFromString(bookClubInfo.weeksInfo[i + 1].startDate) : null;
             if (bookClubInfo.weeksInfo[i].completed) { // If week is completed, add completed class and add tick symbol to week title
                 week.className += " book-club-week--completed";
                 weekTitle.innerHTML += " <span class='wk-icon fa-regular fa-check' style='float: right'></span>";
             }
 
-            if (today < new Date(bookClubInfo.weeksInfo[i].startDate)) { // If week is in the future, add inactive class
+            if (today < dateFromString(bookClubInfo.weeksInfo[i].startDate)) { // If week is in the future, add inactive class
                 week.className += " book-club-week--inactive";
             } else if (nextWeekStartDate && today >= nextWeekStartDate && !bookClubInfo.weeksInfo[i].completed) { // If week is missed, add missed class and add exclamation symbol to week title
                 week.className += " book-club-week--missed";
                 weekTitle.innerHTML += " <span class='wk-icon fa-regular fa-exclamation' style='float: right'></span>";
-            } else if (bookClubInfo.active && today >= new Date(bookClubInfo.weeksInfo[i].startDate) && (!nextWeekStartDate || today < nextWeekStartDate)) { // If week is active, add active class
+            } else if (bookClubInfo.active && today >= dateFromString(bookClubInfo.weeksInfo[i].startDate) && (!nextWeekStartDate || today < nextWeekStartDate)) { // If week is active, add active class
                 week.className += " book-club-week--active";
             }
 
@@ -493,6 +503,7 @@
                 word = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 bookTitle = bookTitle.replace(new RegExp(`${word}`, 'ig'), "");
             });
+            bookTitle = bookTitle.replace(/\s{2,}/g, " ");
             bookTitle = bookTitle.trim();
 
             // Loop through all a tags in .regular.contents .cooked and find the first one which has a link to a google sheet or google docs
@@ -531,12 +542,12 @@
                     for(let j = 0; j < tableRows.length; j++) {
                         let tableCells = tableRows[j].querySelectorAll("td");
                         if(tableCells.length > 0 && tableCells[startDateIndex].innerText !== "" && tableCells[startPageIndex].innerText !== "") {
-                            let startDate = tableCells[startDateIndex].innerText.replace("st", "").replace("nd", "").replace("rd", "").replace("th", "").replace("of", "") + " " + new Date().getFullYear();
+                            let startDate = new Date(tableCells[startDateIndex].innerText.replace("st", "").replace("nd", "").replace("rd", "").replace("th", "").replace("of", "") + " " + new Date().getFullYear());
                             let weekInfo = {
                                 completed: false,
                                 startPage: parseInt(tableCells[startPageIndex].innerHTML.match(/\d+/)[0]),
-                                startDate: new Date(startDate).toString()
-                            }
+                                startDate: startDate.toISOString().substring(0, 10)
+                            };
                             weeksInfo.push(weekInfo);
                             // Set total pages to the last number in tableCells[startPageIndex].innerHTML using regex to find it
                             if(j === tableRows.length - 1) {

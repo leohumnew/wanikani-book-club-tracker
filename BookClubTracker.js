@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.5.2
+// @version      0.5.3
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -535,14 +535,16 @@
                     let startDateIndex = null, startPageIndex = null;
                     tableRows[0].querySelectorAll("th").forEach((th, index) => {
                         if(startDateIndex == null && th.innerHTML.toLowerCase().includes("date")) startDateIndex = index;
-                        else if(startPageIndex == null && th.innerHTML.toLowerCase().includes("page") && !th.innerHTML.toLowerCase().includes("count")) startPageIndex = index;
+                        else if(startPageIndex == null && th.innerHTML.toLowerCase().includes("page") && !th.innerHTML.toLowerCase().includes("count") && !th.innerHTML.toLowerCase().includes("total")) startPageIndex = index;
                     });
 
                     if(startDateIndex == null || startPageIndex == null) break;
                     for(let j = 0; j < tableRows.length; j++) {
                         let tableCells = tableRows[j].querySelectorAll("td");
                         if(tableCells.length > 0 && tableCells[startDateIndex].innerText !== "" && tableCells[startPageIndex].innerText !== "") {
-                            let startDate = new Date(tableCells[startDateIndex].innerText.replace("st", "").replace("nd", "").replace("rd", "").replace("th", "").replace("of", "") + " " + new Date().getFullYear());
+                            let startDateText = tableCells[startDateIndex].innerText.replace("st", "").replace("nd", "").replace("rd", "").replace("th", "").replace("of", "");
+                            if(!startDateText.match(/\d{4}/)) startDateText += " " + new Date().getFullYear();
+                            let startDate = new Date(startDateText);
                             let weekInfo = {
                                 completed: false,
                                 startPage: parseInt(tableCells[startPageIndex].innerHTML.match(/\d+/)[0]),

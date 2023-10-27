@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.5.4
+// @version      0.5.5
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -196,14 +196,14 @@
         // Create and add styles to page
         let style1 = document.createElement('style');
         style1.innerHTML += "#book-clubs-container { background-color: var(--color-wk-panel-background); border-radius: 7px; padding: 10px; height: fit-content; max-height: 500px; overflow: hidden; overflow-y: auto; margin-bottom: 30px;} #book-clubs-container h3, #book-clubs-container p { margin: 0; }";
-        style1.innerHTML += "#book-clubs-container .header-button { background-color: transparent; position: absolute; top: 0; right: 0; width: fit-content; padding: 2px 8px; }"; // Header button
+        style1.innerHTML += "#book-clubs-container .header-button { background-color: transparent; position: absolute; top: 0; right: 0; width: fit-content; padding: 2px 8px; top: 50%; transform: translate(0,-50%);} #book-clubs-container > h2 { margin-top: 0 }"; // Header button
         style1.innerHTML += ".book-clubs-list { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 30px; margin-bottom: 0; background-color: var(--color-wk-panel-background); } :root {--color-correct-light: color-mix(in srgb, var(--color-correct, #18811d), white); --color-incorrect-light: color-mix(in srgb, var(--color-incorrect, #811818), white); --color-tertiary-fix: var(--color-tertiary, #3b97f1); --color-menu-fix: var(--color-menu, #f5f5f5); }";
         style1.innerHTML += ".book-club { background-color: var(--color-wk-panel-content-background); border-radius: 7px; padding: 12px; width: 100%; }";
-        style1.innerHTML += ".book-club .reader-summary__title { font-size: 1.5rem; }";
+        style1.innerHTML += ".book-club .reader-summary__title { font-size: 1.5rem; margin-right: auto; }";
         style1.innerHTML += ".book-club .reader-summary__status button { text-decoration: underline; cursor: pointer; background: none; padding: 0; border: none; margin-top: -3px; } .book-club .reader-summary__status a { text-decoration: underline }"; // Book club active/inactive button and vocab sheet button
         style1.innerHTML += ".book-club .reader-summary__status button:hover, .book-club .reader-summary__status a:hover { color: var(--color-tertiary-fix) !important; }"; // Book club active/inactive button and vocab sheet button hover
-        style1.innerHTML += ".action-button { margin-left: auto; background: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-mid); border: none; padding: 0; } .action-button:hover { color: var(--color-tertiary-fix); }"; // Delete book club button
-        style1.innerHTML += ".book-club-weeks { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 15px; margin-top: 15px; } .book-club-weeks h4 { color: var(--color-text); filter: opacity(0.5); margin: 0; }"; // Weeks container
+        style1.innerHTML += ".action-button { margin-left: 10px; background: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-mid); border: none; padding: 0; } .action-button:hover { color: var(--color-tertiary-fix); }"; // Delete book club button
+        style1.innerHTML += ".book-club-weeks { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 18%)); grid-gap: 1rem; justify-content: space-between; margin-top: 15px; } .book-club-weeks h4 { color: var(--color-text); filter: opacity(0.5); margin: 0; }"; // Weeks container
         style1.innerHTML += ".book-club-week { background-color: var(--color-wk-panel-background); border-radius: 4px; padding: 12px 16px; cursor: pointer; }";
         style1.innerHTML += ".book-club-week:hover { outline: 1px dashed var(--color-tertiary-fix); }";
         style1.innerHTML += ".book-club-week--missed h3 { font-weight: 600; color: var(--color-incorrect-light); }";
@@ -246,6 +246,12 @@
             return panelBody;
         }
 
+        function swapBookClubsPositions(index1, index2) {
+            let temp = bookClubs[index1];
+            bookClubs[index1] = bookClubs[index2];
+            bookClubs[index2] = temp;
+        }
+
         // Create the book club panel
         function createBookClubPanel(bookClubInfo) {
             let bookClubPanel = document.createElement('div'); // Create a container div for the book club panel
@@ -258,6 +264,29 @@
             bookClubTitle.href = bookClubInfo.url;
             bookClubTitle.target = "_blank";
             bookClubTitle.innerHTML = bookClubInfo.title;
+            bookClubHeader.appendChild(bookClubTitle);
+
+            // Create an up and down button to change the order of the book clubs, but only show up button if not first book club, and only show down button if not last book club
+            if(bookClubs.indexOf(bookClubInfo) !== 0) {
+                let upButton = createButton("", function() {
+                    swapBookClubsPositions(bookClubs.indexOf(bookClubInfo), bookClubs.indexOf(bookClubInfo) - 1);
+                    saveBookClubs();
+                    location.reload();
+                });
+                upButton.className = "action-button wk-icon fa-regular fa-arrow-up";
+                upButton.style = "font-size: large; ";
+                bookClubHeader.appendChild(upButton);
+            }
+            if(bookClubs.indexOf(bookClubInfo) !== bookClubs.length - 1) {
+                let downButton = createButton("", function() {
+                    swapBookClubsPositions(bookClubs.indexOf(bookClubInfo), bookClubs.indexOf(bookClubInfo) + 1);
+                    saveBookClubs();
+                    location.reload();
+                });
+                downButton.className = "action-button wk-icon fa-regular fa-arrow-down";
+                downButton.style = "font-size: large;";
+                bookClubHeader.appendChild(downButton);
+            }
 
             let editButton = createButton("", function() { // Create the edit button
                 showBookClubEditPopup(false, bookClubInfo.title);
@@ -270,8 +299,7 @@
                 location.reload();
             });
             deleteButton.className = "action-button wk-icon fa-regular fa-times";
-            deleteButton.style = "margin-left: 10px;";
-            bookClubHeader.append(bookClubTitle, editButton, deleteButton);
+            bookClubHeader.append(editButton, deleteButton);
 
             let bookClubSubTitle = document.createElement('span'); // Create the subtitle with the vocab list link and active status
             bookClubSubTitle.className = "reader-summary__status";
@@ -413,7 +441,7 @@
 
         let bookClubsList = createPanelBody("book-clubs-list");
         container.append(createPanelHeader("Book Club Tracker", newClubButton), bookClubsList);
-        document.querySelector(".dashboard .srs-progress").after(container);
+        document.querySelector(".dashboard .recent-unlocks").parentElement.parentElement.after(container);
 
         bookClubs.forEach(bookClub => { // Loop over each book club and add it to the book clubs list
             let bookClubPanel = createBookClubPanel(bookClub);

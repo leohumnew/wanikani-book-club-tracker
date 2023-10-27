@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.5.3
+// @version      0.5.4
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -548,7 +548,7 @@
                             let weekInfo = {
                                 completed: false,
                                 startPage: parseInt(tableCells[startPageIndex].innerHTML.match(/\d+/)[0]),
-                                startDate: startDate.toISOString().substring(0, 10)
+                                startDate: startDate.toLocaleDateString("en-CA").substring(0, 10)
                             };
                             weeksInfo.push(weekInfo);
                             // Set total pages to the last number in tableCells[startPageIndex].innerHTML using regex to find it

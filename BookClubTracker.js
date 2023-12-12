@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.5.6
+// @version      0.5.7
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -474,7 +474,7 @@
         function checkPage() {
             if(!location.pathname.includes("/t")) return;
              // Loop through spans with class .category-name to check if the current page has category "Book Clubs"
-            let categorySpans = document.querySelectorAll(".topic-category .badge-category .category-name");
+            let categorySpans = document.querySelectorAll(".topic-category .badge-category .badge-category__name");
             for(let i = 0; i < categorySpans.length; i++) {
                 if(categorySpans[i].innerHTML === "Book Clubs") {
                     if(!bookClubs) bookClubs = loadBookClubs();

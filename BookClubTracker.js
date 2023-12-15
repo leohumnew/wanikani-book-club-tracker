@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.5.9
+// @version      0.6.0
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -41,7 +41,7 @@
         return date;
     }
 
-    // Create a popup menu to manually add or edit a book club
+    // Create a popup menu to manually add or edit a book club - used in both dashboard and community pages
     function manualAddEdit(bookClub, isCreating, canEditTitle = false) {
         // Create a container for all the text inputs, then add them with an html string to the popupForm's innerHTML
         let popupForm = document.createElement('form');
@@ -197,25 +197,30 @@
         let style1 = document.createElement('style');
         style1.innerHTML += `
         #book-clubs-container { background-color: var(--color-wk-panel-background); border-radius: 7px; padding: 10px; height: fit-content; max-height: 500px; overflow: hidden; overflow-y: auto; margin-bottom: 30px;} #book-clubs-container h3, #book-clubs-container p { margin: 0; }
-        #book-clubs-container .header-button { background-color: transparent; position: absolute; top: 0; right: 0; width: fit-content; padding: 2px 8px; top: 50%; transform: translate(0,-50%);} #book-clubs-container > h2 { margin-top: 0 } /* Header button */
-        .book-clubs-list { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 20px; margin-bottom: 0; background-color: var(--color-wk-panel-background); } :root {--color-correct-light: color-mix(in srgb, var(--color-correct, #18811d), white); --color-incorrect-light: color-mix(in srgb, var(--color-incorrect, #811818), white); --color-tertiary-fix: var(--color-tertiary, #3b97f1); --color-menu-fix: var(--color-menu, #f5f5f5); }
-        .book-club { background-color: var(--color-wk-panel-content-background); border-radius: 7px; padding: 12px; width: 100%; }
+        #book-clubs-container .header-button { background-color: transparent; width: fit-content; padding: 2px 8px } #book-clubs-container > div { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px } #book-clubs-container > div > h2 { margin: 0; font-size: 22px } #book-clubs-container > div > h2 > button {border: none; color: var(--color-text-mid)} /* Header buttons and title */
+        
+        .book-clubs-list { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 0; background-color: var(--color-wk-panel-background); } :root {--color-correct-light: color-mix(in srgb, var(--color-correct, #18811d), white); --color-incorrect-light: color-mix(in srgb, var(--color-incorrect, #811818), white); --color-tertiary-fix: var(--color-tertiary, #3b97f1); --color-menu-fix: var(--color-menu, #f5f5f5); }
+        .book-club { background-color: var(--color-wk-panel-content-background); border-radius: 7px; padding: 12px; width: calc(100% - 24px); }
         .book-club .reader-summary__title { font-size: 1.5rem; margin-right: auto; }
         .book-club .reader-summary__status button { text-decoration: underline; cursor: pointer; background: none; padding: 0; border: none; margin-top: -3px; } .book-club .reader-summary__status a { text-decoration: underline } /* Book club active/inactive button and vocab sheet button */
         .book-club .reader-summary__status button:hover, .book-club .reader-summary__status a:hover { color: var(--color-tertiary-fix) !important; } /* Book club active/inactive button and vocab sheet button hover */
         .action-button { margin-left: 10px; background: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-mid); border: none; padding: 0; } .action-button:hover { color: var(--color-tertiary-fix); } /* Delete book club button */
         .book-club:first-child .up-button { display: none; } .book-club:last-child .down-button { display: none; } /* Hide up/down buttons for first/last book clubs */
-        .book-club-weeks { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 18%)); grid-gap: 1rem; justify-content: space-between; margin-top: 15px; } .book-club-weeks h4 { color: var(--color-text); filter: opacity(0.5); margin: 0; } /* Weeks container */
+        
+        .book-club-weeks.full-size { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 18%)); grid-gap: 1rem; justify-content: space-between; margin-top: 15px; } /* Weeks container - full size */
+        .book-club-weeks.compact-size { display: grid; grid-auto-flow: column; grid-gap: 1rem; grid-auto-columns: minmax(12.5rem, 32%); overflow-x: auto; padding: 5px; margin-top: 10px; scroll-snap-type: inline mandatory; mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); } /* Weeks container - compact size */
+        .book-club-weeks.compact-size .book-club-week { scroll-snap-align: center; } /* Weeks - compact size */
+        .book-club-weeks h4 { color: var(--color-text); filter: opacity(0.5); margin: 0; }
         .book-club-week { background-color: var(--color-wk-panel-background); border-radius: 4px; padding: 12px 16px; cursor: pointer; }
         .book-club-week:hover { outline: 1px dashed var(--color-tertiary-fix); }
         .book-club-week--missed h3 { font-weight: 600; color: var(--color-incorrect-light); }
         .book-club-week--completed h3 { font-weight: 600; color: var(--color-correct-light); }
         .book-club-week--active { font-weight: 600; border: 1px solid var(--color-tertiary-fix); } .book-club-week--active p { font-weight: normal; }
         .book-club-week--inactive { filter: opacity(0.5); }
-        .background-overlay { background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; }
-        .edit-popup { background-color: var(--color-menu-fix); border-radius: 7px; padding: var(--spacing-loose); width: 50%; height: 50%; position: fixed; top: 50%; left: 50%; transform: translate(-50.12%, -50.12%); overflow-y: auto; }
-        .edit-popup h2 { text-align: center; font-size: 2rem; margin-bottom: var(--spacing-loose); } .edit-popup .action-button { position: absolute; top: 1em; right: 1em; } /* Popup title and close button
-        .edit-popup .popup-buttons { width: fit-content; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) } .edit-popup .popup-buttons button { margin: 0 10px; font-size: var(--font-size-large); cursor: pointer; } /* Popup add/edit buttons */
+
+        .edit-popup { background-color: var(--color-menu-fix); border-radius: 7px; padding: var(--spacing-loose); width: 50%; height: 50%; overflow-y: auto; }
+        .edit-popup h2 { text-align: center; font-size: 2rem; margin-bottom: var(--spacing-loose); } .edit-popup .action-button { position: absolute; top: 1em; right: 1em; } /* Popup title and close button */
+        #book-club-create-choice-popup .popup-buttons { width: 100%; display: flex; flex-direction: column; } #book-club-create-choice-popup .popup-buttons button { margin: 10px; font-size: var(--font-size-large); cursor: pointer; } /* Popup add/edit buttons */
         .edit-popup__form > textarea { margin-bottom: var(--spacing-tight); margin-top: var(--spacing-tight); padding: 3px; border-radius: 4px; width: 100%; height: 200px; resize: none; } /* Popup form textarea for JSON input */
         .edit-popup__form > input { margin-bottom: var(--spacing-tight); padding: 3px; border-radius: 4px; background-color: var(--color-wk-panel-content-background); color: var(--color-text) } /* Popup form input */
         .edit-popup__form input:focus { outline: 1px solid var(--color-tertiary-fix); }
@@ -224,17 +229,20 @@
         .edit-popup #weeksInfo form { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 15px; } /* Popup weeks info form for adding weeks */
         .edit-popup #weeksInfo form button { padding: 3px; border-radius: 4px; cursor: pointer; margin-left: auto; border: none; } .edit-popup #weeksInfo ul button { padding: 3px; border-radius: 4px; cursor: pointer; margin-left: 10px; border: none; } #weeksInfo input { padding: 3px; border-radius: 4px; background-color: var(--color-menu-fix); } /* Popup weeks info form button and input */
         .edit-popup__form > button { margin: auto; cursor: pointer; width: 100%; } /* Popup save button */
+        #settings-popup label { float: left; margin: 0 } #settings-popup input { margin: 3px 0 25px 10px; } /* Settings popup */
         `;
         document.head.appendChild(style1);
 
         // Create the header for a "panel" (section with title + content)
-        function createPanelHeader(text, button) {
+        function createPanelHeader(text, button, titleButton) {
             let panelTitle = document.createElement('div');
             panelTitle.style.position = "relative";
             let panelTitleText = document.createElement('h2');
             panelTitleText.innerHTML = text;
-            panelTitleText.className = "dashboard-panel__title";
-            panelTitleText.style.marginTop = "0";
+            if(titleButton) {
+                titleButton.className += "header-button wk-button wk-button--default";
+                panelTitleText.appendChild(titleButton);
+            }
             panelTitle.appendChild(panelTitleText);
             if (button) { // If a button was passed in, add it to the right of the h2 element
                 button.className += "header-button wk-button wk-button--default";
@@ -256,7 +264,7 @@
             bookClubs[index2] = temp;
         }
 
-        // Create the book club panel
+        // Create the panel for an individual book club
         function createBookClubPanel(bookClubInfo) {
             let bookClubPanel = document.createElement('div'); // Create a container div for the book club panel
             bookClubPanel.className = "book-club";
@@ -327,6 +335,9 @@
 
             let bookClubWeeks = document.createElement('div'); // Create a container div for the weeks or an "Inactive" message if the book club is inactive
             bookClubWeeks.className = "book-club-weeks";
+            if (GM_getValue("WaniKaniBookClubsCompactMode", false)) bookClubWeeks.className += " compact-size"; // If compact mode is enabled, add the full-size class to the weeks container
+            else bookClubWeeks.className += " full-size";
+
             if (!bookClubInfo.active) {
                 // Check if all weeks are complete
                 let allWeeksComplete = true;
@@ -385,7 +396,6 @@
             return week;
         }
 
-
         // ------------------ POPUP MENU ------------------
         // Create a popup menu to paste JSON
         function pasteJSON() {
@@ -414,20 +424,19 @@
         function showBookClubEditPopup(isCreating, bookClubName) {
             let bookClub = isCreating ? null : getBookClub(bookClubName);
 
-            let backgroundOverlay = document.createElement('div');
-            backgroundOverlay.className = "background-overlay";
-            let popup = document.createElement('div');
+            let popup = document.createElement('dialog');
             popup.className = "edit-popup";
-            backgroundOverlay.appendChild(popup);
-
-            let popupTitle = document.createElement('h2');
-            popupTitle.innerHTML = isCreating ? "Add Book Club" : "Edit Book Club";
+            popup.id = "book-club-create-choice-popup";
 
             let closeButton = createButton("", function() {
-                document.body.removeChild(backgroundOverlay);
+                popup.close();
+                document.body.removeChild(popup);
             });
             closeButton.className = "wk-icon fa-regular fa-times action-button";
             popup.appendChild(closeButton);
+
+            let popupTitle = document.createElement('h2');
+            popupTitle.innerHTML = isCreating ? "Add Book Club" : "Edit Book Club";
 
             if(isCreating) { // If creating, add buttons to choose manual add or to paste JSON
                 let manualAddButton = createButton("Manual Add", function() {
@@ -448,26 +457,68 @@
                 popup.append(popupTitle, manualAddEdit(bookClub, isCreating));
             }
 
-            document.body.appendChild(backgroundOverlay);
+            document.body.appendChild(popup);
+            popup.showModal();
+        }
+
+        // Create a popup menu to change settings
+        function showSettingsPopup() {
+            if (!document.querySelector("#settings-popup")) {
+                let settingsPopup = document.createElement('dialog');
+                settingsPopup.className = "edit-popup";
+                settingsPopup.id = "settings-popup";
+                settingsPopup.innerHTML = `
+                <h2>Settings</h2>
+                <form>
+                    <label for='darkMode'>Compact Mode</label><input type='checkbox' id='compactMode' name='compactMode' ` + (GM_getValue("WaniKaniBookClubsCompactMode", false) ? "checked" : "") + `><br>
+                    <button type='submit' class='wk-button--default'>Save</button>
+                </form>
+                `;
+                settingsPopup.querySelector("form").addEventListener("submit", function(e) {
+                    e.preventDefault();
+                    GM_setValue("WaniKaniBookClubsCompactMode", document.querySelector("#compactMode").checked);
+                    location.reload();
+                });
+                let closeButton = createButton("", function() {
+                    settingsPopup.close();
+                });
+                closeButton.className = "wk-icon fa-regular fa-times action-button close-button";
+                settingsPopup.appendChild(closeButton);
+                document.body.appendChild(settingsPopup);
+                settingsPopup.showModal();
+            }
+            document.querySelector("#settings-popup").showModal();            
         }
 
         // ------------------ MAIN SCRIPT ------------------
         // Create WK Book Club panel
         let container = document.createElement('div');
         container.id = "book-clubs-container";
-        // Create a button to add a new book club
-        let newClubButton = createButton("Add Book Club", function() {
+
+        // Create panel header buttons
+        let newClubButton = createButton("Add Club", function() {
             showBookClubEditPopup(true, null);
         });
+        let settingsButton = createButton("", function() {
+            showSettingsPopup();
+        });
+        settingsButton.className = "wk-icon fa-regular fa-cog ";
 
+        // Create the panel body, then add both to the container and to the page
         let bookClubsList = createPanelBody("book-clubs-list");
-        container.append(createPanelHeader("Book Club Tracker", newClubButton), bookClubsList);
+        container.append(createPanelHeader("Book Club Tracker", newClubButton, settingsButton), bookClubsList);
         document.querySelector(".dashboard .recent-unlocks").parentElement.parentElement.after(container);
 
         bookClubs.forEach(bookClub => { // Loop over each book club and add it to the book clubs list
             try {
                 let bookClubPanel = createBookClubPanel(bookClub);
                 bookClubsList.appendChild(bookClubPanel);
+                // Scroll to the active week if it exists and compact class is enabled
+                let activeWeek = bookClubPanel.querySelector(".book-club-week--active");
+                let scrollContainer = bookClubPanel.querySelector(".book-club-weeks");
+                if (activeWeek && scrollContainer.classList.contains("compact-size")) {
+                    scrollContainer.scrollTo({center: true, left: activeWeek.offsetLeft - scrollContainer.offsetLeft, behavior: "auto"});
+                }
             } catch (e) {
                 console.error("Error creating book club panel: " + e);
                 if(bookClub === null) {
@@ -485,23 +536,23 @@
 
     } else if(location.href.includes("community")) {
         let oldHref = document.location.href;
-        // Create a mutation observer
+        // Create a mutation observer to check if the page has changed without a full load
         const observer = new MutationObserver (mutations => {
             // Check if the href has changed
             if (oldHref !== document.location.href) {
                 // Update the old href
                 oldHref = document.location.href;
-                // Delay by 500ms
-                setTimeout (checkPage, 200);
+                setTimeout(checkPage, 200);
             }
         });
-        observer.observe (document.querySelector ('body'), { childList: true, subtree: true });
+        observer.observe(document.querySelector ('body'), { childList: true, subtree: true });
         // Also call event on page load
         checkPage();
 
         // Check if the current page is a book club page
         function checkPage() {
             if(!location.pathname.includes("/t")) return;
+            else if(document.readyState !== "complete") return setTimeout(checkPage, 200);
              // Loop through spans with class .category-name to check if the current page has category "Book Clubs"
             let categorySpans = document.querySelectorAll(".topic-category .badge-category .badge-category__name");
             for(let i = 0; i < categorySpans.length; i++) {
@@ -578,7 +629,9 @@
             let totalPages = 0;
             let weeksInfo = [];
             let possibleTables = document.querySelectorAll(".regular.contents .cooked .md-table table");
-            for(let i = 0; i < possibleTables.length; i++) {
+            let threadCreatedDate = new Date(parseInt(document.querySelector('#post_1 span[data-time]').getAttribute('data-time')));
+
+            for(let i = 0; i < possibleTables.length; i++) { // Loop through tables in the post and try to find the schedule table
                 let table = possibleTables[i];
                 let tableRows = table.querySelectorAll("tr");
                 let isScheduleTable = false;
@@ -591,7 +644,7 @@
                 }
                 if(tableRows.length > 0 && isScheduleTable) {
                     let startDateIndex = null, startPageIndex = null;
-                    tableRows[0].querySelectorAll("th").forEach((th, index) => {
+                    tableRows[0].querySelectorAll("th").forEach((th, index) => { // Check if the table has a start date and start page column
                         if(startDateIndex == null && th.innerHTML.toLowerCase().includes("date")) startDateIndex = index;
                         else if(startPageIndex == null && th.innerHTML.toLowerCase().includes("page") && !th.innerHTML.toLowerCase().includes("count") && !th.innerHTML.toLowerCase().includes("total")) startPageIndex = index;
                     });
@@ -599,10 +652,11 @@
                     if(startDateIndex == null || startPageIndex == null) break;
                     for(let j = 0; j < tableRows.length; j++) {
                         let tableCells = tableRows[j].querySelectorAll("td");
-                        if(tableCells.length > 0 && tableCells[startDateIndex].innerText !== "" && tableCells[startPageIndex].innerText !== "") {
+                        if(tableCells.length > 0 && tableCells[startDateIndex].innerText !== "" && tableCells[startPageIndex].innerText !== "") { // If the row has a start date and start page, add it to weeksInfo
                             let startDateText = tableCells[startDateIndex].innerText.replace("st", "").replace("nd", "").replace("rd", "").replace("th", "").replace("of", "");
-                            if(!startDateText.match(/\d{4}/)) startDateText += " " + new Date().getFullYear();
+                            if(!startDateText.match(/\d{4}/)) startDateText += " " + threadCreatedDate.getFullYear(); // If the year isn't included in the date, add it from the thread created date
                             let startDate = new Date(startDateText);
+                            if(startDate.getMonth() < threadCreatedDate.getMonth()) startDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate()); // If the month of this week is before the thread created month, add a year to the date
                             let weekInfo = {
                                 completed: false,
                                 startPage: parseInt(tableCells[startPageIndex].innerHTML.match(/\d+/)[0]),

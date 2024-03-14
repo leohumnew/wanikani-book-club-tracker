@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.6.1
+// @version      0.6.2
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
 // @match        https://community.wanikani.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=wanikani.com
+// @require      https://greasyfork.org/scripts/489759-wk-custom-icons/code/CustomIcons.js?version=1342513
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @license      MIT
@@ -88,7 +89,7 @@
         newWeekForm.innerHTML = `
             <label for='startPage'>Start Page</label><input type='number' id='startPage' name='startPage' placeholder='Start Page' required>
             <label for='startDate'>Start Date</label><input type='date' id='startDate' name='startDate' placeholder='Start Date' required>
-            <button type='submit' class='wk-icon fa-regular fa-plus'></button>
+            <button type='submit'>${Icons.customIconTxt("plus")}</button>
             <hr style="width: 100%;">
         `;
         newWeekForm.addEventListener("submit", function(e) {
@@ -116,7 +117,8 @@
                     weeksInfoList.childNodes[i].querySelector("span").innerHTML = i + 1;
                 }
             });
-            deleteWeekButton.className = "delete-week-button wk-icon fa-regular fa-times";
+            deleteWeekButton.className = "delete-week-button";
+            deleteWeekButton.appendChild(Icons.customIcon("cross"));
             weekElement.appendChild(deleteWeekButton);
 
             if(index != -1) weeksInfoList.insertBefore(weekElement, weeksInfoList.childNodes[index]);
@@ -143,7 +145,8 @@
                     weeksInfoList.childNodes[i].querySelector("span").innerHTML = i + 1;
                 }
             });
-            deleteWeekButton.className = "delete-week-button wk-icon fa-regular fa-times";
+            deleteWeekButton.className = "delete-week-button";
+            deleteWeekButton.appendChild(Icons.customIcon("cross"));
             weekElement.appendChild(deleteWeekButton);
             weeksInfoList.appendChild(weekElement);
         }
@@ -187,6 +190,7 @@
 
     // Main book clubs array
     let bookClubs;
+    Icons.setUpSVGElements();
 
     // ------------------ DASHBOARD ------------------
     if (!location.href.includes("community") && (location.pathname == "/dashboard" || location.pathname == "/")) {
@@ -196,6 +200,7 @@
         // Create and add styles to page
         let style1 = document.createElement('style');
         style1.innerHTML += `
+        .wk-icon { width: var(--icon-height, 1em) }
         #book-clubs-container { background-color: var(--color-wk-panel-background); border-radius: 7px; padding: 10px; height: fit-content; overflow-y: auto; margin-bottom: 30px; } #book-clubs-container h3, #book-clubs-container p { margin: 0; }
         #book-clubs-container .header-button { background-color: transparent; width: fit-content; padding: 2px 8px } #book-clubs-container > div { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px } #book-clubs-container > div > h2 { margin: 0; font-size: 22px } #book-clubs-container > div > h2 > button {border: none; color: var(--color-text-mid)} /* Header buttons and title */
         
@@ -221,17 +226,18 @@
         .book-club-week--active { font-weight: 600; border: 1px solid var(--color-tertiary-fix); } .book-club-week--active p { font-weight: normal; }
         .book-club-week--inactive { filter: opacity(0.5); border: var(--color-text-mid, 1px solid #BBB); }
 
+        .edit-popup button:not(.wk-button--default) { cursor: pointer; border: none; background: transparent } /* Popup buttons */
         .edit-popup { background-color: var(--color-menu-fix); border-radius: 7px; padding: var(--spacing-loose); width: 50%; height: 50%; overflow-y: auto; }
         .edit-popup h2 { text-align: center; font-size: 2rem; margin-bottom: var(--spacing-loose); } .edit-popup .action-button { position: absolute; top: 1em; right: 1em; } /* Popup title and close button */
-        #book-club-create-choice-popup .popup-buttons { width: 100%; display: flex; flex-direction: column; } #book-club-create-choice-popup .popup-buttons button { margin: 10px; font-size: var(--font-size-large); cursor: pointer; } /* Popup add/edit buttons */
+        #book-club-create-choice-popup .popup-buttons { width: 100%; display: flex; flex-direction: column; } #book-club-create-choice-popup .popup-buttons button { margin: 10px; font-size: var(--font-size-large); } /* Popup add/edit buttons */
         .edit-popup__form > textarea { margin-bottom: var(--spacing-tight); margin-top: var(--spacing-tight); padding: 3px; border-radius: 4px; width: 100%; height: 200px; resize: none; } /* Popup form textarea for JSON input */
         .edit-popup__form > input { margin-bottom: var(--spacing-tight); padding: 3px; border-radius: 4px; background-color: var(--color-wk-panel-content-background); color: var(--color-text) } /* Popup form input */
         .edit-popup__form input:focus { outline: 1px solid var(--color-tertiary-fix); }
         .edit-popup__form > label { font-weight: 600; }
         .edit-popup #weeksInfo { background-color: var(--color-wk-panel-content-background); padding: 15px; border-radius: 7px; margin: 10px 0; } #weeksInfo li { margin-bottom: 5px; } /* Popup weeks info */
         .edit-popup #weeksInfo form { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 15px; } /* Popup weeks info form for adding weeks */
-        .edit-popup #weeksInfo form button { padding: 3px; border-radius: 4px; cursor: pointer; margin-left: auto; border: none; } .edit-popup #weeksInfo ul button { padding: 3px; border-radius: 4px; cursor: pointer; margin-left: 10px; border: none; } #weeksInfo input { padding: 3px; border-radius: 4px; background-color: var(--color-menu-fix); } /* Popup weeks info form button and input */
-        .edit-popup__form > button { margin: auto; cursor: pointer; width: 100%; } /* Popup save button */
+        .edit-popup #weeksInfo form button { padding: 3px; border-radius: 4px; margin-left: auto; } .edit-popup #weeksInfo ul button { padding: 3px; border-radius: 4px; margin-left: 10px; } #weeksInfo input { padding: 3px; border-radius: 4px; background-color: var(--color-menu-fix); } /* Popup weeks info form button and input */
+        .edit-popup__form > button { margin: auto; width: 100%; } /* Popup save button */
         #settings-popup label { float: left; margin: 0 } #settings-popup input { margin: 3px 0 25px 10px; } /* Settings popup */
         `;
         if (GM_getValue("WaniKaniBookClubsLimitVerticalVisible", false)) style1.innerHTML += "#book-clubs-container { max-height: 500px; }"
@@ -292,7 +298,8 @@
                 bookClubsList.insertBefore(bookClubPanel, previousSibling);
             });
             upButton.title = "Move Up";
-            upButton.className = "up-button action-button wk-icon fa-regular fa-arrow-up";
+            upButton.className = "up-button action-button";
+            upButton.appendChild(Icons.customIcon("chevron-up"));
             upButton.style = "font-size: large; ";
             bookClubHeader.appendChild(upButton);
 
@@ -305,7 +312,8 @@
                 bookClubsList.insertBefore(nextSibling, bookClubPanel);
             });
             downButton.title = "Move Down";
-            downButton.className = "down-button action-button wk-icon fa-regular fa-arrow-down";
+            downButton.className = "down-button action-button";
+            downButton.appendChild(Icons.customIcon("chevron-down"));
             downButton.style = "font-size: large;";
             bookClubHeader.appendChild(downButton);
 
@@ -313,7 +321,8 @@
                 showBookClubEditPopup(false, bookClubInfo.title);
             });
             editButton.title = "Edit";
-            editButton.className = "action-button wk-icon fa-regular fa-pen-to-square";
+            editButton.className = "action-button";
+            editButton.appendChild(Icons.customIcon("edit"));
             editButton.style = "font-size: large;";
 
             let deleteButton = createButton("", function() { // Create the delete button
@@ -321,7 +330,8 @@
                 bookClubPanel.remove();
             });
             deleteButton.title = "Delete";
-            deleteButton.className = "action-button wk-icon fa-regular fa-times";
+            deleteButton.className = "action-button";
+            deleteButton.appendChild(Icons.customIcon("cross"));
             bookClubHeader.append(editButton, deleteButton);
 
             let bookClubSubTitle = document.createElement('span'); // Create the subtitle with the vocab list link and active status
@@ -342,7 +352,7 @@
 
             let bookClubWeeks = document.createElement('div'); // Create a container div for the weeks or an "Inactive" message if the book club is inactive
             bookClubWeeks.className = "book-club-weeks";
-            if (GM_getValue("WaniKaniBookClubsCompactMode", false)) bookClubWeeks.className += " compact-size"; // If compact mode is enabled, add the full-size class to the weeks container
+            if (GM_getValue("WaniKaniBookClubsCompactMode", true)) bookClubWeeks.className += " compact-size"; // If compact mode is enabled, add the full-size class to the weeks container
             else bookClubWeeks.className += " full-size";
 
             if (!bookClubInfo.active) {
@@ -373,12 +383,14 @@
                 let scrollLeftButton = createButton("", function() {
                     bookClubWeeks.scrollBy({left: -bookClubWeeks.firstChild.offsetWidth, behavior: "smooth"});
                 });
-                scrollLeftButton.className = "wk-icon fa-regular fa-chevron-left action-button";
+                scrollLeftButton.className = "action-button";
+                scrollLeftButton.appendChild(Icons.customIcon("chevron-left"));
                 scrollLeftButton.style = "font-size: large;";
                 let scrollRightButton = createButton("", function() {
                     bookClubWeeks.scrollBy({left: bookClubWeeks.firstChild.offsetWidth, behavior: "smooth"});
                 });
-                scrollRightButton.className = "wk-icon fa-regular fa-chevron-right action-button";
+                scrollRightButton.className = "action-button";
+                scrollRightButton.appendChild(Icons.customIcon("chevron-right"));
                 scrollRightButton.style = "font-size: large;";
                 bookClubWeeksContainer.prepend(scrollLeftButton);
                 bookClubWeeksContainer.append(scrollRightButton);
@@ -410,14 +422,14 @@
                 let nextWeekStartDate = i < bookClubInfo.weeksInfo.length - 1 ? dateFromString(bookClubInfo.weeksInfo[i + 1].startDate) : null;
                 if (bookClubInfo.weeksInfo[i].completed) { // If week is completed, add completed class and add tick symbol to week title
                     week.className += " book-club-week--completed";
-                    weekTitle.innerHTML += " <span class='wk-icon fa-regular fa-check' style='float: right'></span>";
+                    weekTitle.innerHTML += " <span style='float: right'>"+Icons.customIconTxt("tick")+"</span>";
                 }
 
                 if (today < dateFromString(bookClubInfo.weeksInfo[i].startDate)) { // If week is in the future, add inactive class
                     week.className += " book-club-week--inactive";
                 } else if (nextWeekStartDate && today >= nextWeekStartDate && !bookClubInfo.weeksInfo[i].completed) { // If week is missed, add missed class and add exclamation symbol to week title
                     week.className += " book-club-week--missed";
-                    weekTitle.innerHTML += " <span class='wk-icon fa-regular fa-exclamation' style='float: right'></span>";
+                    weekTitle.innerHTML += " <span style='float: right'>"+Icons.customIconTxt("exclamation")+"</span>";
                 } else if (bookClubInfo.active && today >= dateFromString(bookClubInfo.weeksInfo[i].startDate) && (!nextWeekStartDate || today < nextWeekStartDate)) { // If week is active, add active class
                     week.className += " book-club-week--active";
                 }
@@ -465,7 +477,8 @@
                 popup.close();
                 document.body.removeChild(popup);
             });
-            closeButton.className = "wk-icon fa-regular fa-times action-button";
+            closeButton.appendChild(Icons.customIcon("cross"));
+            closeButton.className = "action-button";
             popup.appendChild(closeButton);
 
             let popupTitle = document.createElement('h2');
@@ -517,7 +530,8 @@
                 let closeButton = createButton("", function() {
                     settingsPopup.close();
                 });
-                closeButton.className = "wk-icon fa-regular fa-times action-button close-button";
+                closeButton.className = "action-button close-button";
+                closeButton.appendChild(Icons.customIcon("cross"));
                 settingsPopup.appendChild(closeButton);
                 document.body.appendChild(settingsPopup);
                 settingsPopup.showModal();
@@ -537,7 +551,7 @@
         let settingsButton = createButton("", function() {
             showSettingsPopup();
         });
-        settingsButton.className = "wk-icon fa-regular fa-cog ";
+        settingsButton.appendChild(Icons.customIcon("settings"));
 
         // Create the panel body, then add both to the container and to the page
         let bookClubsList = createPanelBody("book-clubs-list");
@@ -551,7 +565,7 @@
                 // Scroll to the active week if it exists and compact class is enabled
                 let activeWeek = bookClubPanel.querySelector(".book-club-week--active");
                 let scrollContainer = bookClubPanel.querySelector(".book-club-weeks");
-                if (scrollContainer.classList.contains("compact-size")) {
+                if (scrollContainer && scrollContainer.classList.contains("compact-size")) {
                     if (!activeWeek) activeWeek = scrollContainer.querySelectorAll(".book-club-week")[3]; // If there is no active week, set active week to the 4th week (first real week)
                     scrollContainer.scrollTo({left: activeWeek.offsetLeft - scrollContainer.offsetLeft - scrollContainer.offsetWidth / 2 + activeWeek.offsetWidth / 2, behavior: "auto"}); // Scroll so that active week is in the center of scrollContainer
                 }
@@ -612,7 +626,7 @@
                 style2.id = "add-book-club-button-style";
                 style2.innerHTML += ".add-book-club-button { background-color: transparent; padding: 10px; margin-left: 10px !important; cursor: pointer; font-size: small; vertical-align: middle; border: 1px solid #515151; }"; // Add book club button
                 style2.innerHTML += ".edit-popup { padding: 15px; background-color: var(--tertiary-200); position: relative; } .edit-popup button { background-color: transparent }";
-                style2.innerHTML += ".edit-popup .close-button { position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: large; }";
+                style2.innerHTML += ".edit-popup .close-button { position: absolute; top: 10px; right: 10px; font-size: large; }";
                 style2.innerHTML += ".edit-popup #weeksInfo form {display: flex; align-items: center; column-gap: 10px; } .edit-popup #weeksInfo form:get-child(2) { margin-right: 20px; } .edit-popup #weeksInfo form hr { width: 0 !important; }"; // Weeks info form alignment
                 style2.innerHTML += ".edit-popup #totalPages { margin-bottom: 20px } .edit-popup #weeksInfo { background-color: var(--tertiary-100); padding: 10px; }";
                 style2.innerHTML += ".edit-popup #weeksInfo li button { color: gray; border: none; } .edit-popup #weeksInfo li button::before { content: 'X'; } .edit-popup #weeksInfo form button::before { content: '+'; }"; // Popup weeks info form button and input

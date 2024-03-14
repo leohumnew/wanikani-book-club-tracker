@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.6.2
+// @version      0.6.3
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
 // @match        https://community.wanikani.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=wanikani.com
-// @require      https://greasyfork.org/scripts/489759-wk-custom-icons/code/CustomIcons.js?version=1342513
+// @require      https://greasyfork.org/scripts/489759-wk-custom-icons/code/CustomIcons.js?version=1342522
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @license      MIT
@@ -200,7 +200,6 @@
         // Create and add styles to page
         let style1 = document.createElement('style');
         style1.innerHTML += `
-        .wk-icon { width: var(--icon-height, 1em) }
         #book-clubs-container { background-color: var(--color-wk-panel-background); border-radius: 7px; padding: 10px; height: fit-content; overflow-y: auto; margin-bottom: 30px; } #book-clubs-container h3, #book-clubs-container p { margin: 0; }
         #book-clubs-container .header-button { background-color: transparent; width: fit-content; padding: 2px 8px } #book-clubs-container > div { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px } #book-clubs-container > div > h2 { margin: 0; font-size: 22px } #book-clubs-container > div > h2 > button {border: none; color: var(--color-text-mid)} /* Header buttons and title */
         

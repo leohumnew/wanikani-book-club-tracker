@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.6.5
+// @version      0.6.6
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
 // @match        https://community.wanikani.com/*
+// @match        https://forums.learnnatively.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=wanikani.com
 // @require      https://greasyfork.org/scripts/489759-wk-custom-icons/code/CustomIcons.js?version=1344498
 // @grant        GM_setValue
@@ -89,7 +90,7 @@
         newWeekForm.innerHTML = `
             <label for='startPage'>Start Page</label><input type='number' id='startPage' name='startPage' placeholder='Start Page' required>
             <label for='startDate'>Start Date</label><input type='date' id='startDate' name='startDate' placeholder='Start Date' required>
-            <button type='submit'>${Icons.customIconTxt("plus")}</button>
+            <button type='submit'>${(!location.href.includes("community") && !location.href.includes("forums")) ? Icons.customIconTxt("plus") : ""}</button>
             <hr style="width: 100%;">
         `;
         newWeekForm.addEventListener("submit", function(e) {
@@ -118,7 +119,7 @@
                 }
             });
             deleteWeekButton.className = "delete-week-button";
-            deleteWeekButton.appendChild(Icons.customIcon("cross"));
+            if(!location.href.includes("community") && !location.href.includes("forums")) deleteWeekButton.appendChild(Icons.customIcon("cross"));
             weekElement.appendChild(deleteWeekButton);
 
             if(index != -1) weeksInfoList.insertBefore(weekElement, weeksInfoList.childNodes[index]);
@@ -146,7 +147,7 @@
                 }
             });
             deleteWeekButton.className = "delete-week-button";
-            deleteWeekButton.appendChild(Icons.customIcon("cross"));
+            if(!location.href.includes("community") && !location.href.includes("forums")) deleteWeekButton.appendChild(Icons.customIcon("cross"));
             weekElement.appendChild(deleteWeekButton);
             weeksInfoList.appendChild(weekElement);
         }
@@ -193,7 +194,7 @@
     Icons.setUpSVGElements();
 
     // ------------------ DASHBOARD ------------------
-    if (!location.href.includes("community") && (location.pathname == "/dashboard" || location.pathname == "/")) {
+    if (!location.href.includes("community") && !location.href.includes("forums") && (location.pathname == "/dashboard" || location.pathname == "/")) {
 
         bookClubs = loadBookClubs();
 
@@ -515,7 +516,7 @@
                 settingsPopup.innerHTML = `
                 <h2>Settings</h2>
                 <form>
-                    <label for='compactMode'>Compact Mode</label><input type='checkbox' id='compactMode' name='compactMode' ` + (GM_getValue("WaniKaniBookClubsCompactMode", false) ? "checked" : "") + `><br>
+                    <label for='compactMode'>Compact Mode</label><input type='checkbox' id='compactMode' name='compactMode' ` + (GM_getValue("WaniKaniBookClubsCompactMode", true) ? "checked" : "") + `><br>
                     <label for='limitVerticalVisible'>Limit Panel Height</label><input type='checkbox' id='limitVerticalVisible' name='limitVerticalVisible' ` + (GM_getValue("WaniKaniBookClubsLimitVerticalVisible", false) ? "checked" : "") + `><br>
                     <button type='submit' class='wk-button--default'>Save</button>
                 </form>
@@ -583,7 +584,7 @@
             bookClubsList.appendChild(noBookClubsMessage);
         }
 
-    } else if(location.href.includes("community")) {
+    } else if(location.href.includes("community") || location.href.includes("forums")) {
         let oldHref = document.location.href;
         // Create a mutation observer to check if the page has changed without a full load
         const observer = new MutationObserver (mutations => {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.6.6
+// @version      0.6.7
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -238,7 +238,7 @@
         .edit-popup #weeksInfo form { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 15px; } /* Popup weeks info form for adding weeks */
         .edit-popup #weeksInfo form button { padding: 3px; border-radius: 4px; margin-left: auto; } .edit-popup #weeksInfo ul button { padding: 3px; border-radius: 4px; margin-left: 10px; } #weeksInfo input { padding: 3px; border-radius: 4px; background-color: var(--color-menu-fix); } /* Popup weeks info form button and input */
         .edit-popup__form > button { margin: auto; width: 100%; } /* Popup save button */
-        #settings-popup label { float: left; margin: 0 } #settings-popup input { margin: 3px 0 25px 10px; } /* Settings popup */
+        #settings-popup label { float: left; margin: 0 } #settings-popup input, #settings-popup select { margin: 3px 0 25px 10px; } /* Settings popup */
         `;
         if (GM_getValue("WaniKaniBookClubsLimitVerticalVisible", false)) style1.innerHTML += "#book-clubs-container { max-height: 500px; }"
         document.head.appendChild(style1);
@@ -372,14 +372,14 @@
                     bookClubWeeks.appendChild(createWeekInfo(bookClubInfo, i));
                 }
                 // If compact mode is enabled, add two blank weeks at the end and start of the weeks container as padding
-                if (GM_getValue("WaniKaniBookClubsCompactMode", false)) {
+                if (GM_getValue("WaniKaniBookClubsCompactMode", true)) {
                     for (let i = 0; i < 3; i++) bookClubWeeks.prepend(createWeekInfo(bookClubInfo, -1));
                     for (let i = 0; i < 3; i++) bookClubWeeks.append(createWeekInfo(bookClubInfo, -1));
                 }
                 bookClubWeeksContainer.appendChild(bookClubWeeks);
             }
 
-            if (GM_getValue("WaniKaniBookClubsCompactMode", false) && bookClubInfo.active) { // If compact mode is enabled, add scroll buttons before and after the weeks scroller
+            if (GM_getValue("WaniKaniBookClubsCompactMode", true) && bookClubInfo.active) { // If compact mode is enabled, add scroll buttons before and after the weeks scroller
                 let scrollLeftButton = createButton("", function() {
                     bookClubWeeks.scrollBy({left: -bookClubWeeks.firstChild.offsetWidth, behavior: "smooth"});
                 });
@@ -429,7 +429,7 @@
                     week.className += " book-club-week--inactive";
                 } else if (nextWeekStartDate && today >= nextWeekStartDate && !bookClubInfo.weeksInfo[i].completed) { // If week is missed, add missed class and add exclamation symbol to week title
                     week.className += " book-club-week--missed";
-                    weekTitle.innerHTML += " <span style='float: right'>"+Icons.customIconTxt("exclamation")+"</span>";
+                    weekTitle.innerHTML += " <span style='float: right'>"+Icons.customIconTxt("warning")+"</span>";
                 } else if (bookClubInfo.active && today >= dateFromString(bookClubInfo.weeksInfo[i].startDate) && (!nextWeekStartDate || today < nextWeekStartDate)) { // If week is active, add active class
                     week.className += " book-club-week--active";
                 }
@@ -518,6 +518,7 @@
                 <form>
                     <label for='compactMode'>Compact Mode</label><input type='checkbox' id='compactMode' name='compactMode' ` + (GM_getValue("WaniKaniBookClubsCompactMode", true) ? "checked" : "") + `><br>
                     <label for='limitVerticalVisible'>Limit Panel Height</label><input type='checkbox' id='limitVerticalVisible' name='limitVerticalVisible' ` + (GM_getValue("WaniKaniBookClubsLimitVerticalVisible", false) ? "checked" : "") + `><br>
+                    <label for='bookClubsPosition'>Position</label><select id='bookClubsPosition'><option value='top' ` + (GM_getValue("WaniKaniBookClubsPosition", "bottom") === "top" ? "selected" : "") + `>Top</option><option value='bottom' ` + (GM_getValue("WaniKaniBookClubsPosition", "bottom") === "bottom" ? "selected" : "") + `>Bottom</option></select><br>
                     <button type='submit' class='wk-button--default'>Save</button>
                 </form>
                 `;
@@ -525,6 +526,7 @@
                     e.preventDefault();
                     GM_setValue("WaniKaniBookClubsCompactMode", document.querySelector("#compactMode").checked);
                     GM_setValue("WaniKaniBookClubsLimitVerticalVisible", document.querySelector("#limitVerticalVisible").checked);
+                    GM_setValue("WaniKaniBookClubsPosition", document.querySelector("#bookClubsPosition").value);
                     location.reload();
                 });
                 let closeButton = createButton("", function() {
@@ -556,7 +558,9 @@
         // Create the panel body, then add both to the container and to the page
         let bookClubsList = createPanelBody("book-clubs-list");
         container.append(createPanelHeader("Book Club Tracker", newClubButton, settingsButton), bookClubsList);
-        document.querySelector(".dashboard .recent-unlocks").parentElement.parentElement.after(container);
+        // Switch where to add the book clubs list depending on the saved setting
+        if (GM_getValue("WaniKaniBookClubsPosition", "bottom") === "top") document.querySelector(".progress-and-forecast").before(container);
+        else document.querySelector(".dashboard .recent-unlocks").parentElement.parentElement.after(container);
 
         bookClubs.forEach(bookClub => { // Loop over each book club and add it to the book clubs list
             try {

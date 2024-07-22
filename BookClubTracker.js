@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.6.8
+// @version      0.7.0
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
 // @match        https://community.wanikani.com/*
 // @match        https://forums.learnnatively.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=wanikani.com
-// @require      https://greasyfork.org/scripts/489759-wk-custom-icons/code/CustomIcons.js?version=1386034
+// @require      https://greasyfork.org/scripts/489759-wk-custom-icons/code/CustomIcons.js?version=1398802
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @license      MIT
@@ -560,7 +560,7 @@
         container.append(createPanelHeader("Book Club Tracker", newClubButton, settingsButton), bookClubsList);
         // Switch where to add the book clubs list depending on the saved setting
         if (GM_getValue("WaniKaniBookClubsPosition", "bottom") === "top") document.querySelector(".progress-and-forecast").before(container);
-        else document.querySelector(".dashboard .recent-unlocks").parentElement.parentElement.after(container);
+        else document.querySelector(".progress-and-forecast").after(container);
 
         bookClubs.forEach(bookClub => { // Loop over each book club and add it to the book clubs list
             try {

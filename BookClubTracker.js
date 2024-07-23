@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WK Book Club Tracker
 // @namespace    http://tampermonkey.net/
-// @version      0.7.0
+// @version      0.7.1
 // @description  Add a panel to the WK Readers page to track book club progress
 // @author       leohumnew
 // @match        https://www.wanikani.com/*
@@ -201,7 +201,7 @@
         // Create and add styles to page
         let style1 = document.createElement('style');
         style1.innerHTML += `
-        #book-clubs-container { background-color: var(--color-wk-panel-background); border-radius: 7px; padding: 10px; height: fit-content; overflow-y: auto; margin-bottom: 30px; } #book-clubs-container h3, #book-clubs-container p { margin: 0; }
+        #book-clubs-container { background-color: var(--color-wk-panel-background); border-radius: 7px; padding: 10px; height: fit-content; overflow-y: auto; margin: var(--spacing-xloose, 32px) 0; } #book-clubs-container h3, #book-clubs-container p { margin: 0; }
         #book-clubs-container .header-button { background-color: transparent; width: fit-content; padding: 2px 8px } #book-clubs-container > div { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px } #book-clubs-container > div > h2 { margin: 0; font-size: 22px } #book-clubs-container > div > h2 > button {border: none; color: var(--color-text-mid)} /* Header buttons and title */
         
         .book-clubs-list { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 0; background-color: var(--color-wk-panel-background); } :root {--color-correct-light: color-mix(in srgb, var(--color-correct, #18811d), white); --color-incorrect-light: color-mix(in srgb, var(--color-incorrect, #811818), white); --color-tertiary-fix: var(--color-tertiary, #3b97f1); --color-menu-fix: var(--color-menu, #f5f5f5); }
@@ -559,8 +559,8 @@
         let bookClubsList = createPanelBody("book-clubs-list");
         container.append(createPanelHeader("Book Club Tracker", newClubButton, settingsButton), bookClubsList);
         // Switch where to add the book clubs list depending on the saved setting
-        if (GM_getValue("WaniKaniBookClubsPosition", "bottom") === "top") document.querySelector(".progress-and-forecast").before(container);
-        else document.querySelector(".progress-and-forecast").after(container);
+        if (GM_getValue("WaniKaniBookClubsPosition", "bottom") === "top") document.querySelector(".dashboard__content").before(container);
+        else document.querySelector(".dashboard__content").after(container);
 
         bookClubs.forEach(bookClub => { // Loop over each book club and add it to the book clubs list
             try {
